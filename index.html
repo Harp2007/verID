@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VerID | Blockchain-Based Tamper-Proof Record Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Fira+Code:wght@400;500;600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF0EF;--panel:#FFFFFF;--ink:#13262B;--mute:#5B6E72;--line:#CBD8D6;
+  --ok:#0F766E;--okbg:#D8F0EC;--bad:#C2410C;--badbg:#FBE4D8;--warn:#B45309;--warnbg:#FEF3C7;
+  --chain:#13262B;--chaintxt:#E6F2F0;--accent:#0F766E;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1A1D;--panel:#14262B;--ink:#E6F2F0;--mute:#8FA7AB;--line:#264248;
+    --ok:#3CC4B4;--okbg:#0F3A37;--bad:#FF8A57;--badbg:#44210F;--warn:#FBBF24;--warnbg:#452A08;
+    --chain:#091316;--chaintxt:#CFE5E2;--accent:#3CC4B4
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1A1D;--panel:#14262B;--ink:#E6F2F0;--mute:#8FA7AB;--line:#264248;
+  --ok:#3CC4B4;--okbg:#0F3A37;--bad:#FF8A57;--badbg:#44210F;--warn:#FBBF24;--warnbg:#452A08;
+  --chain:#091316;--chaintxt:#CFE5E2;--accent:#3CC4B4
+}
+:root[data-theme="light"]{
+  --bg:#EAF0EF;--panel:#FFFFFF;--ink:#13262B;--mute:#5B6E72;--line:#CBD8D6;
+  --ok:#0F766E;--okbg:#D8F0EC;--bad:#C2410C;--badbg:#FBE4D8;--warn:#B45309;--warnbg:#FEF3C7;
+  --chain:#13262B;--chaintxt:#E6F2F0;--accent:#0F766E
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-serif;line-height:1.5;min-height:100vh}
+.wrap{max-width:1220px;margin:0 auto;padding:24px 20px 48px}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif}
+h1{font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.02em;line-height:1}
+.tag{color:var(--mute);margin:6px 0 0;font-size:16px;max-width:720px}
+.top-tools{display:flex;align-items:center;gap:8px;margin-top:4px}
+.tool-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.tool-btn:hover{border-color:var(--ink)}
+
+.nav-tabs{display:flex;gap:8px;margin:18px 0 20px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab-btn{background:transparent;border:0;color:var(--mute);font-family:'Bricolage Grotesque',Figtree,sans-serif;font-size:15px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;transition:all .2s}
+.tab-btn:hover{color:var(--ink);background:rgba(0,0,0,0.03)}
+.tab-btn.active{color:var(--bg);background:var(--ink)}
+
+.flow{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 24px;align-items:center}
+.flow span{padding:6px 14px;border:1.5px solid var(--ink);border-radius:99px;font-weight:600;font-size:13.5px}
+.flow i{font-style:normal;color:var(--mute);font-size:13px}
+
+.grid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+@media(max-width:880px){.grid{grid-template-columns:1fr}}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,0.02)}
+h2{font-size:20px;margin-bottom:12px}
+label{display:block;font-size:12.5px;color:var(--mute);margin:10px 0 3px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+input:focus-visible,button:focus-visible{outline:3px solid var(--ok);outline-offset:1px}
+
+button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px 16px;cursor:pointer;background:var(--ink);color:var(--bg);transition:transform .1s,opacity .15s}
+button:active{transform:scale(.98)}
+button.alt{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+button.alt:hover{background:rgba(0,0,0,0.05)}
+button.warn{background:var(--bad);color:#fff}
+button.warn:hover{opacity:.9}
+button.go{background:var(--ok);color:#fff}
+button.go:hover{opacity:.9}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+.cert{position:relative;border:2px solid var(--ink);border-radius:8px;padding:24px 22px 20px;background:var(--panel);outline:1px solid var(--line);outline-offset:5px;margin:8px 4px 12px}
+.cert .uni{font-family:'Bricolage Grotesque';font-weight:700;font-size:14.5px;color:var(--mute);letter-spacing:1px}
+.cert h3{font-family:'Bricolage Grotesque';font-size:23px;margin:3px 0 12px}
+.cert .f{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+@media(max-width:560px){.cert .f{grid-template-columns:1fr}}
+
+.stamp{position:absolute;right:18px;top:16px;transform:rotate(-8deg);font-family:'Bricolage Grotesque';font-weight:800;font-size:22px;border:3px solid;border-radius:8px;padding:4px 14px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+.stamp.show{opacity:1;transform:rotate(-8deg) scale(1)}
+.stamp.ok{color:var(--ok);background:var(--okbg);border-color:var(--ok)}
+.stamp.bad{color:var(--bad);background:var(--badbg);border-color:var(--bad)}
+
+.sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.sel button{padding:6px 12px;font-size:13.5px}
+.sel button.on{background:var(--ok);color:#fff;border-color:var(--ok)}
+
+.chain{display:flex;gap:0;overflow-x:auto;padding:8px 2px 14px;margin-top:8px}
+.blk{flex:0 0 240px;background:var(--chain);color:var(--chaintxt);border-radius:10px;padding:14px;font-family:'Fira Code',monospace;font-size:11.5px;position:relative;border:2px solid transparent;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.blk.hit{border-color:var(--ok)}.blk.broken{border-color:var(--bad)}
+.blk b{font-family:'Bricolage Grotesque',Figtree;font-size:14.5px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.blk div{margin:4px 0;word-break:break-all;opacity:.92}.blk small{opacity:.6;display:block;font-size:10px;text-transform:uppercase}
+.blk .btn-tamper-blk{background:rgba(255,255,255,0.1);color:#fff;font-size:10.5px;padding:3px 7px;border-radius:5px;border:0;cursor:pointer;margin-top:8px;width:100%}
+.blk .btn-tamper-blk:hover{background:var(--bad)}
+.link{flex:0 0 28px;align-self:center;text-align:center;color:var(--mute);font-weight:800;font-size:18px}
+
+.log{font-family:'Fira Code',monospace;font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;word-break:break-all;min-height:96px}
+.log p{margin:0 0 6px}.log .o{color:var(--ok);font-weight:600}.log .x{color:var(--bad);font-weight:600}.log .m{color:var(--mute)}
+.note{font-size:13px;color:var(--mute);margin:12px 0 0}
+.status{display:inline-block;margin-left:8px;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:99px;vertical-align:middle;font-family:Figtree,sans-serif}
+.status.ok{background:var(--okbg);color:var(--ok)}.status.bad{background:var(--badbg);color:var(--bad)}.status.warn{background:var(--warnbg);color:var(--warn)}
+
+/* File Drop Mode */
+.dropzone{border:2px dashed var(--line);border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;background:var(--bg);transition:border-color .15s}
+.dropzone:hover,.dropzone.dragover{border-color:var(--ok)}
+.dropzone-title{font-family:'Bricolage Grotesque';font-size:17px;font-weight:700;margin-bottom:4px}
+.dropzone-sub{font-size:12.5px;color:var(--mute)}
+
+.footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--mute)}
+.footer b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>VerID</h1>
+      <p class="tag">Verify. Trust. Secure. Blockchain-based tamper-proof record verification, REVA University.</p>
+    </div>
+    <div class="top-tools">
+      <button class="tool-btn" id="themeToggle" title="Toggle theme">☀️/🌙 Theme</button>
+      <button class="tool-btn" id="resetAll" title="Reset to sample state">↺ Reset System</button>
+    </div>
+  </header>
+
+  <nav class="nav-tabs" aria-label="Verification Mode">
+    <button class="tab-btn active" id="tabCert">🎓 Student Academic Records (REVA)</button>
+    <button class="tab-btn" id="tabDoc">📁 Any Document / File Hash Audit</button>
+  </nav>
+
+  <div class="flow">
+    <span>1. Ingest Record / File</span>
+    <i>then</i>
+    <span>2. Compute Raw SHA-256</span>
+    <i>then</i>
+    <span>3. Anchor in Immutable Block</span>
+    <i>then</i>
+    <span>4. Cryptographic Verification</span>
+  </div>
+
+  <!-- VIEW 1: REVA University Degree Certificate Demo -->
+  <div id="viewCert" class="grid">
+    <section class="panel" aria-labelledby="h-issue">
+      <h2 id="h-issue">Issue a record</h2>
+      <label for="name">Student name</label><input id="name" value="Divya Sree G">
+      <label for="usn">USN</label><input id="usn" value="R24CS102">
+      <label for="degree">Degree</label><input id="degree" value="B.Tech CSE (AI and Data Science)">
+      <label for="year">Year of passing</label><input id="year" value="2028">
+      <label for="cgpa">CGPA</label><input id="cgpa" value="8.4">
+      <div class="row"><button class="go" id="issue">Issue record to Blockchain</button></div>
+      <p class="note">Only the record's SHA-256 fingerprint goes on the chain. The record itself stays in the university database.</p>
+    </section>
+
+    <div>
+      <section class="panel" aria-labelledby="h-rec">
+        <h2 id="h-rec">Record and verification</h2>
+        <div class="sel" id="sel"></div>
+        <div class="cert" id="cert">
+          <div class="stamp" id="stamp"></div>
+          <div class="uni">REVA UNIVERSITY, BENGALURU</div>
+          <h3>Degree Certificate<span class="status" id="status"></span></h3>
+          <div class="f" id="fields"></div>
+        </div>
+        <div class="row">
+          <button class="warn" id="tamper">Tamper with record (Change CGPA)</button>
+          <button class="go" id="verify">Verify record</button>
+          <button class="alt" id="restore">Restore original</button>
+        </div>
+        <p class="note">You can also edit any certificate field directly above to forge it in real time, then press <strong>Verify record</strong>.</p>
+        <div class="log" id="log" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" style="margin-top:18px" aria-labelledby="h-chain">
+        <h2 id="h-chain">Blockchain ledger <span class="status" id="chainstat"></span></h2>
+        <div class="chain" id="chain"></div>
+        <p class="note">Click <strong>Tamper with this Block</strong> on any block above to simulate unauthorized ledger modification and see the chain link break!</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- VIEW 2: Any Document / File Hash Verification -->
+  <div id="viewDoc" class="grid" style="display:none">
+    <section class="panel">
+      <h2>Register Any File</h2>
+      <div class="dropzone" id="fileDropzone">
+        <input type="file" id="fileInput" style="display:none" accept=".pdf,.doc,.docx,.txt,.json,.csv,.png,.jpg">
+        <div class="dropzone-title">Drop document or click to browse</div>
+        <div class="dropzone-sub">PDF, DOCX, TXT, JSON, CSV, PNG, JPG (up to 10 MB)</div>
+      </div>
+      <div id="fileInfoBox" style="display:none;margin-top:14px;font-size:13px">
+        <p><strong>File:</strong> <span id="docFileName">-</span> (<span id="docFileSize">-</span>)</p>
+        <p style="margin-top:6px"><strong>Raw SHA-256:</strong></p>
+        <code id="docFileHash" style="font-family:'Fira Code';font-size:11px;word-break:break-all;color:var(--ok)">-</code>
+        <div class="row"><button class="go" id="btnRegisterFile" style="width:100%">Anchor File Hash on Blockchain</button></div>
+      </div>
+    </section>
+
+    <div>
+      <section class="panel">
+        <h2>Verify File Authenticity</h2>
+        <div class="dropzone" id="verifyDropzone">
+          <input type="file" id="verifyFileInput" style="display:none" accept=".pdf,.doc,.docx,.txt,.json,.csv,.png,.jpg">
+          <div class="dropzone-title">Drop file to verify against Blockchain</div>
+          <div class="dropzone-sub">Computes byte-level SHA-256 and audits the chain ledger</div>
+        </div>
+        <div id="verifyResultBox" style="display:none;margin-top:14px">
+          <div class="cert" id="fileCert">
+            <div class="stamp" id="fileStamp"></div>
+            <div class="uni">CRYPTOGRAPHIC AUDIT RECEIPT</div>
+            <h3 id="fileCertTitle">Document Verification</h3>
+            <p id="fileCertDesc" style="font-size:14px;color:var(--mute);margin-bottom:10px">-</p>
+            <div style="font-family:'Fira Code';font-size:11px">
+              <div style="margin-bottom:6px"><strong>Uploaded File SHA-256:</strong><br><span id="auditUploadHash">-</span></div>
+              <div><strong>Registered Block SHA-256:</strong><br><span id="auditChainHash">-</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="log" id="fileLog" style="margin-top:14px" aria-live="polite">
+          <p class="m">Ready to verify documents. Upload an original or modified file to test byte-level tamper detection.</p>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:18px">
+        <h2>Blockchain ledger <span class="status" id="docChainstat"></span></h2>
+        <div class="chain" id="docChain"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div><b>VerID</b> — REVA University Cryptographic Integrity Verification</div>
+    <div>Zero-Serverless Client-Side Engine • Web Crypto SHA-256 • Vercel Ready</div>
+  </footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const FIELDS=[['name','Student name'],['usn','USN'],['degree','Degree'],['year','Year of passing'],['cgpa','CGPA']];
+let chain=[],recs=[],cur=0,verdict=null,hitBlock=null;
+
+// File registry for View 2
+let fileRegistry={};
+
+async function sha(s){
+  const buf=typeof s==='string'?new TextEncoder().encode(s):s;
+  const b=await crypto.subtle.digest('SHA-256',buf);
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+const canon=d=>JSON.stringify(FIELDS.map(([k])=>(d[k]||'').trim()));
+const sh=h=>(!h||h.length<=16)?(h||''):(h.slice(0,8)+'…'+h.slice(-6));
+
+async function addBlock(recordHash,label,payloadType='RECORD'){
+  const idx=chain.length;
+  const prev=idx?chain[idx-1].hash:'0'.repeat(64);
+  const ts=new Date().toISOString().slice(11,19);
+  const hash=await sha(idx+prev+recordHash+ts);
+  chain.push({idx,prev,recordHash,ts,hash,label,payloadType});
+}
+
+async function issue(data){
+  const rh=await sha(canon(data));
+  await addBlock(rh,data.usn,'CERTIFICATE');
+  recs.push({data:{...data},orig:{...data},block:chain.length-1});
+  cur=recs.length-1;verdict=null;hitBlock=null;
+  return rh;
+}
+
+async function chainValid(){
+  for(let i=0;i<chain.length;i++){
+    const b=chain[i];
+    if(i&&b.prev!==chain[i-1].hash)return false;
+    if(await sha(b.idx+b.prev+b.recordHash+b.ts)!==b.hash)return false;
+  }
+  return true;
+}
+
+function log(html){$('log').innerHTML=html}
+function logFile(html){$('fileLog').innerHTML=html}
+
+function renderChainHTML(){
+  return chain.map((b,i)=>`
+    ${i?'<div class="link" aria-hidden="true">→</div>':''}
+    <div class="blk ${hitBlock===i?(verdict==='ok'?'hit':'broken'):''}">
+      <b>Block ${b.idx}${b.idx===0?' (genesis)':''} <span style="font-size:10px;opacity:.7">${b.label||''}</span></b>
+      <small>time ${b.ts} UTC</small>
+      <div><small>stored fingerprint</small>${b.idx?sh(b.recordHash):'00000000…'}</div>
+      <div><small>previous hash link</small>${sh(b.prev)}</div>
+      <div><small>block hash</small>${sh(b.hash)}</div>
+      ${b.idx>0?`<button class="btn-tamper-blk" onclick="tamperBlock(${b.idx})">⚡ Tamper with Block</button>`:''}
+    </div>
+  `).join('');
+}
+
+function render(){
+  // Selector buttons
+  $('sel').innerHTML=recs.map((r,i)=>`<button class="alt ${i===cur?'on':''}" data-i="${i}">${r.data.usn||'record'}</button>`).join('');
+  
+  if(recs.length>0&&recs[cur]){
+    const r=recs[cur];
+    $('fields').innerHTML=FIELDS.map(([k,l])=>`<div><label for="f-${k}">${l}</label><input id="f-${k}" data-k="${k}" value="${r.data[k].replace(/"/g,'&quot;')}"></div>`).join('');
+  }
+
+  // Certificate Stamp
+  const st=$('stamp');
+  st.className='stamp'+(verdict?' show '+verdict:'');
+  st.textContent=verdict==='ok'?'VERIFIED':verdict==='bad'?'TAMPERED':'';
+
+  const s=$('status');
+  s.className='status '+(verdict||'');
+  s.textContent=verdict==='ok'?'matches chain':verdict==='bad'?'does not match chain':'';
+
+  // Render chain on both views
+  const chainHtml=renderChainHTML();
+  $('chain').innerHTML=chainHtml;
+  $('docChain').innerHTML=chainHtml;
+
+  chainValid().then(v=>{
+    ['chainstat','docChainstat'].forEach(id=>{
+      const c=$(id);
+      if(c){
+        c.className='status '+(v?'ok':'bad');
+        c.textContent=v?'chain intact':'chain broken';
+      }
+    });
+  });
+}
+
+// Tamper with specific blockchain block to demonstrate chain break
+window.tamperBlock=async function(idx){
+  if(!chain[idx])return;
+  chain[idx].recordHash='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // altered
+  render();
+  log(`<p class="x">Block #${idx} fingerprint altered directly without re-hashing the chain!</p>
+  <p class="m">The mathematical link to subsequent blocks is broken. Notice the red status badge above the ledger: <strong>chain broken</strong>.</p>`);
+  logFile(`<p class="x">Block #${idx} altered! Chain validation failed.</p>`);
+};
+
+// Event Delegation for record selector
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.dataset.i!==undefined){
+    cur=+t.dataset.i;verdict=null;hitBlock=null;render();
+    log('<p class="m">Record selected. Verify it, or tamper with it first.</p>');
+  }
+});
+
+// Real-time input in certificate fields
+$('fields').addEventListener('input',e=>{
+  const k=e.target.dataset.k;
+  if(!k||!recs[cur])return;
+  recs[cur].data[k]=e.target.value;
+  verdict=null;hitBlock=null;
+  $('stamp').className='stamp';
+  $('status').textContent='';
+  $('status').className='status';
+  log('<p class="m">Record edited directly in certificate. It has not been verified yet. Press <strong>Verify record</strong>.</p>');
+});
+
+// Issue record
+$('issue').onclick=async()=>{
+  const d={};
+  FIELDS.forEach(([k])=>d[k]=$(k).value);
+  if(FIELDS.some(([k])=>!d[k].trim())){
+    log('<p class="x">Please fill in every field before issuing the record.</p>');
+    return;
+  }
+  const rh=await issue(d);
+  render();
+  log(`<p class="o">✓ Record issued and committed to ledger.</p>
+  <p class="m">1. Computed SHA-256 Fingerprint:</p><p>${rh}</p>
+  <p class="m">2. Anchored inside Block #${chain.length-1}, cryptographically bound to previous block hash.</p>`);
+};
+
+// Tamper CGPA
+$('tamper').onclick=()=>{
+  if(!recs[cur])return;
+  const r=recs[cur];
+  const oldVal=r.data.cgpa;
+  r.data.cgpa=(parseFloat(r.data.cgpa)>=9?'7.1':'9.8');
+  verdict=null;hitBlock=null;render();
+  log(`<p class="x">Tampered: CGPA changed from ${oldVal} to ${r.data.cgpa} in the database.</p>
+  <p class="m">The blockchain ledger was NOT modified. Now press <strong>Verify record</strong> to test tamper detection.</p>`);
+};
+
+// Restore original
+$('restore').onclick=()=>{
+  if(!recs[cur])return;
+  recs[cur].data={...recs[cur].orig};
+  verdict=null;hitBlock=null;render();
+  log('<p class="m">Original record restored. Press Verify record to re-confirm authenticity.</p>');
+};
+
+// Verify record
+$('verify').onclick=async()=>{
+  if(!recs[cur])return;
+  const r=recs[cur];
+  const now=await sha(canon(r.data));
+  const onchain=chain[r.block].recordHash;
+  const isChainValid=await chainValid();
+  const ok=(now===onchain)&&isChainValid;
+
+  verdict=ok?'ok':'bad';
+  hitBlock=r.block;
+  render();
+
+  if(!isChainValid){
+    log(`<p class="x">❌ VERIFICATION FAILED: Blockchain integrity compromised!</p>
+    <p class="m">One or more blocks on the chain were tampered with. The ledger cannot be trusted.</p>`);
+    return;
+  }
+
+  log(`<p class="m">1. Fingerprint of the record as presented:</p><p class="${ok?'o':'x'}">${now}</p>
+  <p class="m">2. Fingerprint anchored on Block #${r.block}:</p><p class="o">${onchain}</p>
+  <p class="${ok?'o':'x'}">${ok?'✓ Hashes match exactly! The record is authentic and untampered.':'✗ Hashes differ! Even a single altered letter or decimal changes the entire 256-bit hash. Record is forged!'}</p>`);
+};
+
+// Tabs navigation
+$('tabCert').onclick=()=>{
+  $('tabCert').classList.add('active');
+  $('tabDoc').classList.remove('active');
+  $('viewCert').style.display='grid';
+  $('viewDoc').style.display='none';
+};
+$('tabDoc').onclick=()=>{
+  $('tabDoc').classList.add('active');
+  $('tabCert').classList.remove('active');
+  $('viewCert').style.display='none';
+  $('viewDoc').style.display='grid';
+};
+
+// Theme toggle
+$('themeToggle').onclick=()=>{
+  const curr=document.documentElement.getAttribute('data-theme');
+  const next=curr==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+};
+
+// View 2: File Handling
+let selectedFileBytes=null;
+let selectedFileName='';
+
+$('fileDropzone').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=async e=>{
+  if(e.target.files&&e.target.files[0]){
+    const file=e.target.files[0];
+    selectedFileName=file.name;
+    selectedFileBytes=await file.arrayBuffer();
+    const fileHash=await sha(selectedFileBytes);
+    
+    $('docFileName').textContent=file.name;
+    $('docFileSize').textContent=(file.size/1024).toFixed(1)+' KB';
+    $('docFileHash').textContent=fileHash;
+    $('fileInfoBox').style.display='block';
+  }
+};
+
+$('btnRegisterFile').onclick=async()=>{
+  if(!selectedFileBytes)return;
+  const fileHash=await sha(selectedFileBytes);
+  await addBlock(fileHash,selectedFileName,'FILE');
+  fileRegistry[fileHash]={name:selectedFileName,block:chain.length-1};
+  render();
+  logFile(`<p class="o">✓ Document hash registered on Block #${chain.length-1}:</p><p>${fileHash}</p>`);
+};
+
+// View 2: File Verification
+$('verifyDropzone').onclick=()=>$('verifyFileInput').click();
+$('verifyFileInput').onchange=async e=>{
+  if(e.target.files&&e.target.files[0]){
+    const file=e.target.files[0];
+    const bytes=await file.arrayBuffer();
+    const upHash=await sha(bytes);
+    const reg=fileRegistry[upHash];
+    const isChainValid=await chainValid();
+
+    $('verifyResultBox').style.display='block';
+    $('auditUploadHash').textContent=upHash;
+
+    const stamp=$('fileStamp');
+    if(reg&&isChainValid){
+      stamp.className='stamp show ok';
+      stamp.textContent='VERIFIED';
+      $('fileCertTitle').textContent='✓ Authentic Document';
+      $('fileCertDesc').textContent=`Matches registered file "${reg.name}" anchored on Block #${reg.block}.`;
+      $('auditChainHash').textContent=upHash;
+      logFile(`<p class="o">✓ Verified: Uploaded file byte-fingerprint exactly matches Block #${reg.block}.</p>`);
+    } else if(!isChainValid){
+      stamp.className='stamp show bad';
+      stamp.textContent='TAMPERED';
+      $('fileCertTitle').textContent='❌ Blockchain Integrity Compromised';
+      $('fileCertDesc').textContent='Ledger block linkage broken.';
+      $('auditChainHash').textContent='LEDGER INVALID';
+      logFile(`<p class="x">Verification failed because the blockchain itself was tampered with.</p>`);
+    } else {
+      stamp.className='stamp show bad';
+      stamp.textContent='UNREGISTERED';
+      $('fileCertTitle').textContent='⚠ Document Not Found / Modified';
+      $('fileCertDesc').textContent='No matching 256-bit hash found in the blockchain ledger.';
+      $('auditChainHash').textContent='NO MATCH ON CHAIN';
+      logFile(`<p class="x">No matching cryptographic hash on chain. If this file was modified, its SHA-256 fingerprint has changed.</p>`);
+    }
+  }
+};
+
+// Reset system
+async function resetSystem(){
+  chain=[];recs=[];cur=0;verdict=null;hitBlock=null;fileRegistry={};
+  await addBlock('0'.repeat(64),'genesis');
+  await issue({name:'Bhagath G',usn:'R24CS101',degree:'B.Tech CSE (AI and Data Science)',year:'2028',cgpa:'8.9'});
+  render();
+  log('<p class="m">A sample record is already on the chain. Press <strong>Tamper with record</strong>, then <strong>Verify record</strong> to test the system.</p>');
+  logFile('<p class="m">Ready to verify documents.</p>');
+}
+$('resetAll').onclick=resetSystem;
+
+// Initialize on page load
+resetSystem();
+</script>
+</body>
+</html>
